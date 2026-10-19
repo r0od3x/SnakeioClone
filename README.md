@@ -35,6 +35,17 @@ npm run online      # ou : node online/server.mjs
 
 Voir [`online/README.md`](online/README.md), notamment pour le pare-feu Windows.
 
+## Trailer Studio (tournage)
+
+`index.html?studio` ouvre les outils de tournage pour la bande-annonce :
+- caméras cinéma ;
+- ralentis ;
+- scènes préparées et rejouables ;
+- liste de plans ;
+- enregistrement vidéo et captures haute résolution.
+
+Sans `?studio`, rien n'est chargé. Voir [`trailer/README.md`](trailer/README.md).
+
 ## L'IA : les trois couches de Reynolds
 
 1. **Sélection de l'action** (`snakeBot.js`) : à chaque image, le bot perçoit son voisinage (orbes, têtes et corps dans son rayon de perception) et choisit un mode, par priorité :

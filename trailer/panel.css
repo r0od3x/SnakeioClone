@@ -1,0 +1,184 @@
+/* Trailer Studio : panneau de tournage (chargé seulement avec ?studio). */
+#studio-panel {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 50;
+  width: min(340px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 10px 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 14, 18, 0.88);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5);
+  color: #e9edf5;
+  font: 12px/1.4 Inter, "Segoe UI", system-ui, sans-serif;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+#studio-panel header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+#studio-panel header strong {
+  flex: 1;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #555b66;
+}
+
+.rec-dot.on {
+  background: #ff3b30;
+  box-shadow: 0 0 10px #ff3b30;
+  animation: rec-blink 1s steps(2) infinite;
+}
+
+@keyframes rec-blink {
+  50% { opacity: 0.35; }
+}
+
+#studio-panel .status {
+  white-space: pre-line;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #b9c2d3;
+  font-variant-numeric: tabular-nums;
+}
+
+#studio-panel .status.warn {
+  color: #ffd740;
+}
+
+#studio-panel details {
+  margin-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+}
+
+#studio-panel summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9fb3d9;
+}
+
+#studio-panel .row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#studio-panel .label {
+  flex: 0 0 96px;
+  color: #aab3c5;
+}
+
+#studio-panel .slider {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#studio-panel input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: #7aa7ff;
+}
+
+#studio-panel output {
+  min-width: 52px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #dfe7ff;
+}
+
+#studio-panel select, #studio-panel input[type="number"] {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #1b1f27;
+  color: inherit;
+  font: inherit;
+}
+
+#studio-panel .buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+#studio-panel button {
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #232936;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+#studio-panel button:hover {
+  border-color: #7aa7ff;
+}
+
+#studio-panel .check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#studio-panel .hint, #studio-panel .notes {
+  color: #8790a3;
+  font-size: 11px;
+}
+
+#studio-panel .notes {
+  margin: 6px 0 0;
+  font-style: italic;
+}
+
+#studio-panel .problems {
+  margin: 6px 0 0;
+  color: #ffb4a8;
+}
+
+#studio-panel .events {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  color: #c8d1e3;
+}
+
+/* Sortie de taille fixe (1080p…) : le canvas garde sa taille réelle, affiché réduit et centré. */
+body.studio-fixed #game canvas {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(100vw, calc(100vh * 16 / 9)) !important;
+  height: auto !important;
+  max-height: 100vh;
+}
+
+body.studio #game {
+  background: #000;
+}

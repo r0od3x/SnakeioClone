@@ -25,6 +25,17 @@
     <script src="profile.js?v=1"></script>
     <script src="menu.js?v=1"></script>
     <script src="hud.js?v=1"></script>
+    <script>
+      // Trailer Studio (outils de tournage) : chargé seulement avec index.html?studio.
+      // Sans ce paramètre, aucun fichier de trailer/ n'est chargé et le jeu est inchangé.
+      if (new URLSearchParams(location.search).has('studio')) {
+        document.write('<link rel="stylesheet" href="trailer/panel.css">');
+        for (const file of ['easing', 'cameras', 'timeControl', 'interpolation', 'actorSnake', 'director', 'eventDetector',
+          'grade', 'canvasHud', 'shots', 'shotPlayer', 'recorder', 'panel', 'studio']) {
+          document.write(`<script src="trailer/${file}.js"><\/script>`);
+        }
+      }
+    </script>
     <script src="sketch.js?v=1"></script>
   </head>
   <body>

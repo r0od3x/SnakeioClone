@@ -33,10 +33,10 @@ const FILES = ['vehicle.js', 'debugMode.js', 'wander.js', 'snakeSpecies.js', 'sn
 
 // Fichiers des outils de tournage (trailer/), chargés après le jeu.
 export const TRAILER = ['trailer/easing.js', 'trailer/cameras.js', 'trailer/timeControl.js', 'trailer/interpolation.js',
-  'trailer/actorSnake.js', 'trailer/director.js', 'trailer/eventDetector.js', 'trailer/grade.js', 'trailer/shots.js',
+  'trailer/actorSnake.js', 'trailer/director.js', 'trailer/eventDetector.js', 'trailer/grade.js', 'trailer/canvasHud.js', 'trailer/shots.js',
   'trailer/shotPlayer.js', 'trailer/recorder.js'];
 const TRAILER_NAMES = ['Easing', 'CameraRig', 'TimeControl', 'Interpolation', 'ActorSnake', 'Director', 'EventDetector',
-  'Grade', 'TrailerShots', 'ShotPlayer', 'Recorder'];
+  'Grade', 'CanvasHud', 'TrailerShots', 'ShotPlayer', 'Recorder'];
 
 export function load(w = 800, h = 600, extra = []) {
   const draws = [];

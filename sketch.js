@@ -17,6 +17,11 @@ function $(id) {
   return document.getElementById(id);
 }
 
+// Trailer Studio (index.html?studio) : il prend alors la main sur la boucle et le clavier.
+function studioActive() {
+  return typeof TrailerStudio !== 'undefined' && TrailerStudio.active;
+}
+
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent('game');
@@ -37,6 +42,7 @@ function setup() {
   $('respawn-now').addEventListener('click', () => SnakeArena.respawn(state));
   $('to-menu').addEventListener('click', backToMenu);
   showPhase();
+  if (typeof TrailerStudio !== 'undefined') TrailerStudio.init({ profile, canvas: canvas.elt });
 }
 
 // Partie de démonstration derrière le menu : le « joueur » tourne en rond tranquillement.
@@ -104,6 +110,10 @@ function readInput() {
 }
 
 function draw() {
+  if (studioActive()) {
+    TrailerStudio.frame();
+    return;
+  }
   if (phase !== 'paused') {
     readInput();
     SnakeArena.step(state, width, height);
@@ -129,6 +139,7 @@ function saveRecord() {
 }
 
 function keyPressed() {
+  if (studioActive()) return TrailerStudio.keyPressed();
   if (document.activeElement?.tagName === 'INPUT' && document.activeElement.type === 'text') return true;
   if (key === 'd' || key === 'D') DebugMode.toggle();
   if (key === 'p' || key === 'P' || keyCode === ESCAPE) setPaused(phase === 'play');
@@ -138,5 +149,6 @@ function keyPressed() {
 }
 
 function windowResized() {
+  if (studioActive() && TrailerStudio.windowResized()) return;
   resizeCanvas(windowWidth, windowHeight);
 }

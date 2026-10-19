@@ -43,8 +43,10 @@ const CameraRig = (() => {
     return { x: base.x + settings.offset.x, y: base.y + settings.offset.y, zoom: settings.zoom, rotation: settings.rotation };
   }
 
+  // target : un serpent (suivi), ou un point { x, y } fixe (par exemple le lieu d'une élimination).
   function follow(rig, target, options = {}) {
-    Object.assign(rig.follow, options, { target, last: null });
+    const point = target && !target.pos ? { x: target.x, y: target.y } : null;
+    Object.assign(rig.follow, options, { target: point ? null : target, last: point });
     rig.mode = 'follow';
   }
 
