@@ -1,0 +1,218 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0d1508;
+  color: #eef1ff;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+.card {
+  position: absolute;
+  background: rgba(18, 28, 12, 0.5);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(238, 241, 255, 0.55);
+}
+
+.score {
+  top: 20px;
+  left: 20px;
+  padding: 14px 22px 16px;
+  min-width: 160px;
+  pointer-events: none;
+}
+
+#length {
+  display: block;
+  margin: 2px 0 4px;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(120deg, #f6f9c8, #9be15d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sub {
+  display: block;
+  font-size: 13px;
+  color: rgba(238, 241, 255, 0.72);
+}
+
+.species {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(246, 249, 200, 0.75);
+}
+
+.board {
+  top: 20px;
+  right: 20px;
+  padding: 14px 16px 12px;
+  min-width: 220px;
+  pointer-events: none;
+}
+
+#board {
+  margin: 8px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+#board li {
+  display: grid;
+  grid-template-columns: 18px 10px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 5px 6px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(238, 241, 255, 0.8);
+}
+
+#board li.me {
+  background: linear-gradient(90deg, rgba(155, 225, 93, 0.3), rgba(246, 249, 200, 0.08));
+  color: #ffffff;
+  font-weight: 700;
+}
+
+#board li.human span:nth-child(3)::after {
+  content: " ●";
+  color: #9be15d;
+  font-size: 9px;
+}
+
+#board .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.help {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  margin: 0;
+  padding: 8px 16px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(18, 28, 12, 0.45);
+  font-size: 12px;
+  color: rgba(238, 241, 255, 0.6);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.death {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  background: radial-gradient(circle, rgba(10, 16, 6, 0.25), rgba(10, 16, 6, 0.8));
+  pointer-events: none;
+}
+
+.death h2 {
+  margin: 0 0 8px;
+  font-size: clamp(40px, 8vw, 96px);
+  font-weight: 900;
+  background: linear-gradient(120deg, #ffd27a, #ff7b54);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.death p {
+  margin: 0;
+  font-size: 16px;
+  color: rgba(246, 249, 220, 0.85);
+}
+
+.join {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, rgba(10, 16, 6, 0.35), rgba(10, 16, 6, 0.85));
+}
+
+.join-card {
+  position: static;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 28px;
+}
+
+.join-card h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.join-card h1 span {
+  background: linear-gradient(120deg, #f6f9c8, #9be15d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.join-card p {
+  margin: 0 0 6px;
+  color: rgba(238, 241, 255, 0.7);
+}
+
+.join-card input {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+}
+
+.join-card button {
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #c6f36b, #6fbf3a);
+  color: #10200a;
+  font: inherit;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.join-card .error {
+  min-height: 1.2em;
+  color: #ff8a80;
+}

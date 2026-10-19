@@ -1,0 +1,13 @@
+{
+  "name": "snake-io-reactive-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Snake.io avec des IA réactives (steering behaviors de Craig Reynolds), p5.js, solo et en réseau local.",
+  "scripts": {
+    "test": "node --test tests/ online/tests/",
+    "online": "node online/server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake.io — en ligne</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/shared/snakeSpecies.js"></script>
+    <script src="/shared/snakePainter.js"></script>
+    <script src="/shared/meadow.js"></script>
+    <script src="/shared/preySprites.js"></script>
+    <script src="/client.js" defer></script>
+  </head>
+  <body>
+    <canvas id="game" aria-label="Partie de Snake.io en ligne"></canvas>
+
+    <section class="card score" aria-live="polite">
+      <span class="label">Longueur</span>
+      <strong id="length">0</strong>
+      <span class="sub" id="rank"></span>
+      <span class="species" id="species"></span>
+    </section>
+    <section class="card board">
+      <span class="label">Classement</span>
+      <ol id="board"></ol>
+      <span class="sub" id="players"></span>
+    </section>
+    <p class="help">Souris : diriger · clic maintenu ou Espace : accélérer</p>
+
+    <section class="death" id="death" hidden>
+      <h2>Éliminé</h2>
+      <p id="death-text"></p>
+    </section>
+
+    <section class="join" id="join">
+      <form id="join-form" class="card join-card">
+        <h1>Snake.io <span>en ligne</span></h1>
+        <p>Toi, ton ami et des serpents IA dans la même prairie.</p>
+        <label for="name">Ton nom</label>
+        <input id="name" maxlength="16" autocomplete="nickname" placeholder="Kaa" required>
+        <button type="submit">Jouer</button>
+        <p class="error" id="join-error" role="alert"></p>
+      </form>
+    </section>
+  </body>
+</html>
