@@ -122,8 +122,9 @@ const SnakeArena = (() => {
     return aim(applyParams(new PlayerSnake(p.x, p.y, species, state.profile.name), state.params), rng);
   }
 
+  // Serpents IA (le joueur n'en fait jamais partie, même piloté par une IA).
   function bots(state) {
-    return state.snakes.filter(s => s instanceof SnakeBot);
+    return state.snakes.filter(s => s instanceof SnakeBot && s !== state.player);
   }
 
   function resizeBots(state, count, rng = Math.random) {
@@ -214,9 +215,11 @@ const SnakeArena = (() => {
   }
 
   // Tête hors de l'arène, ou tête contre le corps d'un autre serpent : mort.
+  // Un serpent marqué invulnerable (outils de tournage) ne meurt jamais.
   function collisions(state, rng) {
     const dead = [];
     for (const snake of state.snakes) {
+      if (snake.invulnerable) continue;
       if (Math.hypot(snake.pos.x, snake.pos.y) > RADIUS - snake.r * 0.5) {
         dead.push([snake, null]);
         continue;
@@ -382,14 +385,21 @@ const SnakeArena = (() => {
     ctx.restore();
   }
 
-  function show(state, w = width, h = height) {
-    if (typeof drawingContext === 'undefined') return false;
-    const ctx = drawingContext;
+  // Options (toutes facultatives, par défaut le rendu du jeu) : ctx (contexte cible), names,
+  // minimap, vignette, debug, et camera.rotation (rad) pour les outils de tournage.
+  function show(state, w = width, h = height, options = {}) {
+    const ctx = options.ctx ?? (typeof drawingContext === 'undefined' ? null : drawingContext);
+    if (!ctx) return false;
     const { x, y, zoom } = state.camera;
-    const view = { left: x - w / 2 / zoom, right: x + w / 2 / zoom, top: y - h / 2 / zoom, bottom: y + h / 2 / zoom };
+    const rotation = state.camera.rotation ?? 0;
+    // Caméra tournée : on dessine tout ce qui tient dans le cercle circonscrit à l'écran.
+    const hw = (rotation ? Math.hypot(w, h) / 2 : w / 2) / zoom;
+    const hh = (rotation ? Math.hypot(w, h) / 2 : h / 2) / zoom;
+    const view = { left: x - hw, right: x + hw, top: y - hh, bottom: y + hh };
     ctx.save();
     ctx.translate(w / 2, h / 2);
     ctx.scale(zoom, zoom);
+    if (rotation) ctx.rotate(rotation);
     ctx.translate(-x, -y);
     Meadow.draw(ctx, view, RADIUS);
     for (const food of state.foods) {
@@ -401,19 +411,21 @@ const SnakeArena = (() => {
       if (visible(snake.pos, snake.bodyLength() + 60, view)) snake.show(ctx);
     }
     Meadow.clouds(ctx, view, state.frame);
-    if (DebugMode.enabled) {
+    if (options.debug ?? DebugMode.enabled) {
       for (const snake of state.snakes) if (visible(snake.pos, snake.perception ?? 200, view)) snake.showDebug(ctx);
-    } else {
+    } else if (options.names ?? true) {
       drawNames(ctx, state, view);
     }
     ctx.restore();
-    // Lumière chaude au centre, bords plus sombres.
-    const v = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
-    v.addColorStop(0, 'rgba(255, 236, 180, 0.06)');
-    v.addColorStop(1, 'rgba(8, 14, 4, 0.5)');
-    ctx.fillStyle = v;
-    ctx.fillRect(0, 0, w, h);
-    drawMinimap(ctx, state, w, h);
+    if (options.vignette ?? true) {
+      // Lumière chaude au centre, bords plus sombres.
+      const v = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
+      v.addColorStop(0, 'rgba(255, 236, 180, 0.06)');
+      v.addColorStop(1, 'rgba(8, 14, 4, 0.5)');
+      ctx.fillStyle = v;
+      ctx.fillRect(0, 0, w, h);
+    }
+    if (options.minimap ?? true) drawMinimap(ctx, state, w, h);
     return true;
   }
 

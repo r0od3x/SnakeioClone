@@ -31,7 +31,14 @@ const FILES = ['vehicle.js', 'debugMode.js', 'wander.js', 'snakeSpecies.js', 'sn
   'meadow.js', 'preySprites.js', 'bodySegment.js', 'snakeSounds.js', 'rat.js', 'ratTitle.js', 'snake.js',
   'playerSnake.js', 'snakeBot.js', 'food.js', 'snakeArena.js', 'profile.js'];
 
-export function load(w = 800, h = 600) {
+// Fichiers des outils de tournage (trailer/), chargés après le jeu.
+export const TRAILER = ['trailer/easing.js', 'trailer/cameras.js', 'trailer/timeControl.js', 'trailer/interpolation.js',
+  'trailer/actorSnake.js', 'trailer/director.js', 'trailer/eventDetector.js', 'trailer/grade.js', 'trailer/shots.js',
+  'trailer/shotPlayer.js', 'trailer/recorder.js'];
+const TRAILER_NAMES = ['Easing', 'CameraRig', 'TimeControl', 'Interpolation', 'ActorSnake', 'Director', 'EventDetector',
+  'Grade', 'TrailerShots', 'ShotPlayer', 'Recorder'];
+
+export function load(w = 800, h = 600, extra = []) {
   const draws = [];
   const stubs = Object.fromEntries(DRAWING.map(name => [name, (...args) => draws.push([name, ...args])]));
   const context = vm.createContext({ createVector: (x, y) => new Vector(x, y),
@@ -39,9 +46,13 @@ export function load(w = 800, h = 600) {
   for (const file of FILES) {
     vm.runInContext(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'), context);
   }
+  for (const file of extra) {
+    vm.runInContext(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'), context, { filename: file });
+  }
+  const trailer = TRAILER_NAMES.filter(name => vm.runInContext(`typeof ${name} !== 'undefined'`, context));
   return { draws, context, ...vm.runInContext(
     '({ Vehicle, DebugMode, Wander, Snake, BodySegment, SnakeSounds, Rat, RatTitle, PlayerSnake, SnakeBot, Food, '
-    + 'SnakeSpecies, SnakePainter, Meadow, PreySprites, arena: SnakeArena, Profile })', context) };
+    + `SnakeSpecies, SnakePainter, Meadow, PreySprites, arena: SnakeArena, Profile, ${trailer.join(', ')} })`, context) };
 }
 
 export function seededRng(seed = 42) {
