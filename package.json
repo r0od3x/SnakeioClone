@@ -9,7 +9,8 @@
     "trailer:plan": "node trailer/planner.mjs",
     "trailer:draft": "node trailer/recorder/capture.mjs",
     "trailer:final": "node trailer/recorder/capture.mjs --final",
-    "trailer:animatic": "node trailer/edit/build.mjs"
+    "trailer:animatic": "node trailer-animatic/build.mjs",
+    "trailer:edit": "node trailer/edit/build.mjs"
   },
   "engines": {
     "node": ">=18"

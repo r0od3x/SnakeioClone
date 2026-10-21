@@ -147,3 +147,21 @@ test('réglages de plateau : bots (acteurs gardés), proies, longueur et espèce
   assert.equal(Director.resolve(run, 'leader'), run.actors.a);
   assert.equal(Director.resolve(run, 'player'), run.state.player);
 });
+
+test('scène « le joueur tombe » : notre serpent meurt vite, le rôle player le retrouve après sa mort', () => {
+  const { Director, EventDetector, ActorSnake } = load(800, 600, FILES);
+  const run = Director.newRun({ seed: 4, scenario: 'playerDown', bots: 4, invincible: false, autopilot: true });
+  const player = run.state.player;
+  assert.ok(player instanceof ActorSnake && !player.invulnerable);
+  assert.equal(player.script?.kind, 'seek', 'script posé après la conversion en acteur');
+  const det = EventDetector.create();
+  let kill = null;
+  for (let i = 0; i < 600 && !kill; i++) {
+    const before = EventDetector.snapshot(run.state);
+    Director.step(run);
+    kill = EventDetector.detect(det, run.state, before).find(e => e.type === 'kill' && e.victim === player);
+  }
+  assert.ok(kill, 'le joueur est éliminé');
+  assert.equal(run.state.player, null);
+  assert.equal(Director.resolve(run, 'player'), player, 'dernier joueur vivant');
+});

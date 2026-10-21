@@ -3,3 +3,11 @@ node_modules/
 Thumbs.db
 *.log
 trailer/out/
+
+# Animatique : prises, découpes, images et vidéos générées (lourdes)
+trailer-animatic/takes/
+trailer-animatic/clips/
+trailer-animatic/frames/
+trailer-animatic/.build/
+trailer-animatic/*.mp4
+trailer-animatic/storyboard.html

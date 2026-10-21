@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>card</title>
+  <!-- Cartons de l'animatique (rendus en PNG 1920 × 1080 par lib/frames.mjs) :
+       card.html?kind=black | title&tagline=… | cta&line=…&link=…
+       Le serpent enroulé est dessiné par le vrai peintre du jeu (snakePainter.js). -->
+  <script>
+    // Vecteurs minimaux (le peintre et Vehicle n'ont besoin que de ceci, sans lancer p5).
+    class Vector {
+      constructor(x = 0, y = 0) { this.x = x; this.y = y; }
+      set(x, y) { if (typeof x === 'object') return this.set(x.x, x.y); this.x = x; this.y = y; return this; }
+      copy() { return new Vector(this.x, this.y); }
+      add(v) { this.x += v.x; this.y += v.y; return this; }
+      sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+      mult(n) { this.x *= n; this.y *= n; return this; }
+      mag() { return Math.hypot(this.x, this.y); }
+      setMag(n) { const m = this.mag(); return m ? this.mult(n / m) : this; }
+      limit(n) { return this.mag() > n ? this.setMag(n) : this; }
+      heading() { return Math.atan2(this.y, this.x); }
+      static sub(a, b) { return new Vector(a.x - b.x, a.y - b.y); }
+    }
+    const createVector = (x, y) => new Vector(x, y);
+    const p5 = { Vector };
+  </script>
+  <script src="../../vehicle.js"></script>
+  <script src="../../snakeSpecies.js"></script>
+  <script src="../../snakePainter.js"></script>
+  <script src="../../bodySegment.js"></script>
+  <script src="../../snake.js"></script>
+  <style>
+    html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #070b05; }
+    body {
+      font-family: "Segoe UI Black", "Segoe UI", system-ui, sans-serif; color: #f4f6f0;
+      background: radial-gradient(ellipse at 50% 55%, #16220f 0%, #070b05 72%);
+    }
+    canvas { position: absolute; inset: 0; }
+    .grain { position: absolute; inset: 0; opacity: 0.06;
+      background: repeating-linear-gradient(115deg, #fff 0 2px, transparent 2px 26px); }
+    .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .logo { font-size: 230px; letter-spacing: -0.02em; line-height: 1; text-shadow: 0 14px 44px rgba(0,0,0,0.75); }
+    .logo span { color: #9be15d; }
+    .bar { width: 760px; height: 10px; margin: 26px 0 34px; background: linear-gradient(90deg, transparent, #f6f9c8 20%, #9be15d 80%, transparent); }
+    .tagline { font-family: "Segoe UI Semibold", "Segoe UI", sans-serif; font-weight: 600; font-size: 54px; letter-spacing: 0.04em; color: #e9f0e0; }
+    .cta { font-size: 96px; }
+    .link { margin-top: 44px; font-family: Consolas, "Segoe UI", monospace; font-size: 46px; font-weight: 700;
+      padding: 18px 40px; border: 3px solid #9be15d; border-radius: 14px; color: #c9f59a; background: rgba(155, 225, 93, 0.07); }
+    .small { position: absolute; bottom: 70px; width: 100%; text-align: center; font-family: "Segoe UI", sans-serif; font-weight: 600;
+      font-size: 30px; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(244, 246, 240, 0.45); }
+  </style>
+</head>
+<body>
+  <canvas id="snake" width="1920" height="1080"></canvas>
+  <div class="grain"></div>
+  <div class="center" id="content"></div>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const kind = q.get('kind') ?? 'black';
+    // Un cobra royal enroulé en spirale autour du centre, plus ou moins visible selon le carton.
+    const alpha = { black: 0.16, title: 0.42, cta: 0.26 }[kind] ?? 0.2;
+    const ctx = document.getElementById('snake').getContext('2d');
+    const species = SnakeSpecies.byId(q.get('species') ?? 'kingCobra');
+    const snake = new Snake(0, 0, species, '');
+    snake.mass = 1400;
+    snake.syncSize();
+    const cx = 960;
+    const cy = 560;
+    // Spirale d'Archimède : la tête dehors, le corps s'enroule vers le centre.
+    const path = d => {
+      const a = 1.2 + d / 260;
+      const r = 470 - d * 0.11;
+      return { x: cx + Math.cos(a) * r * 1.35, y: cy + Math.sin(a) * r * 0.82 };
+    };
+    const head = path(0);
+    const ahead = path(-4);
+    snake.pos.set(head.x, head.y);
+    snake.vel.set(head.x - ahead.x, head.y - ahead.y);
+    snake.age = 40;
+    snake.mode = 'chasse';
+    snake.body = Array.from({ length: snake.targetSegments() }, (_, i) => path((i + 1) * snake.spacing));
+    ctx.globalAlpha = alpha;
+    // La hotte du cobra s'ouvre progressivement : quelques images pour l'ouvrir.
+    for (let i = 0; i < 20; i++) {
+      ctx.clearRect(0, 0, 1920, 1080);
+      snake.show(ctx);
+    }
+    const content = document.getElementById('content');
+    const logo = size => `<div class="logo"${size ? ` style="font-size:${size}px"` : ''}>SNAKE<span>.IO</span></div><div class="bar"></div>`;
+    if (kind === 'title') {
+      content.innerHTML = `${logo()}<div class="tagline"></div>`;
+      content.querySelector('.tagline').textContent = q.get('tagline') ?? '';
+    } else if (kind === 'cta') {
+      content.innerHTML = `${logo(120)}<div class="cta"></div><div class="link"></div>`;
+      content.querySelector('.cta').textContent = q.get('line') ?? '';
+      content.querySelector('.link').textContent = q.get('link') ?? '';
+      document.body.insertAdjacentHTML('beforeend', '<div class="small">Douze espèces · IA réactives (Reynolds)</div>');
+    }
+    document.title = 'card:ready';
+  </script>
+</body>
+</html>

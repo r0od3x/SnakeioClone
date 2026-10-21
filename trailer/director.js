@@ -4,11 +4,11 @@
 // Les scènes posent les serpents au départ (c'est la préparation du plateau) ; ensuite tout
 // bouge par steering. Rôles nommés (run.actors) pour les caméras : hunter, prey, victim…
 const Director = (() => {
-  const SCENARIOS = ['open', 'encircle', 'nearMiss', 'killBurst', 'cutOff', 'underdog', 'growth', 'crowded'];
+  const SCENARIOS = ['open', 'encircle', 'nearMiss', 'killBurst', 'cutOff', 'underdog', 'growth', 'crowded', 'playerDown'];
   const LABELS = {
     open: 'Partie libre', encircle: 'Encerclement', nearMiss: 'Frôlement tête-à-tête',
     killBurst: 'Élimination en orbes', cutOff: 'Coupe la route', underdog: 'Le petit contre le géant',
-    growth: 'Croissance express', crowded: 'Arène bondée',
+    growth: 'Croissance express', crowded: 'Arène bondée', playerDown: 'Le joueur tombe',
   };
   const DEFAULTS = {
     seed: 1, scenario: 'open', bots: 12, food: 450, playerMass: null, playerSpecies: null,
@@ -143,6 +143,19 @@ const Director = (() => {
         script: { kind: 'seek', target: middle, boost: true } });
     },
 
+    // Le joueur tombe : notre serpent (piloté par l'IA, pas invincible) fonce dans le corps d'un
+    // gros serpent-roi et meurt ; l'écran « Éliminé » des rats suit. Quelques bots autour.
+    playerDown(run, s) {
+      const c = run.focus;
+      const killer = spawnActor(run, 'killer', { x: c.x + 60, y: c.y + 320, angle: -Math.PI / 2, mass: s.killerMass ?? 260, species: s.killerSpecies ?? 'kingsnake',
+        invulnerable: true, script: { kind: 'heading', angle: -Math.PI / 2, frames: 900 } });
+      const middle = () => killer.body[Math.floor(killer.body.length * 0.55)] ?? killer;
+      setMass(run.state.player, s.playerMass ?? 140);
+      layLine(run.state.player, c.x - 460, c.y, 0);
+      // Script du joueur, posé après sa conversion en acteur (applyPlayerFlags).
+      run.playerScript = { kind: 'seek', target: middle, boost: true };
+    },
+
     // Coupe la route : le tueur accélère le long de la victime, la dépasse et se rabat devant
     // elle ; la victime, qui file tout droit, s'écrase sur son corps. Des charognards attendent.
     cutOff(run, s) {
@@ -214,9 +227,10 @@ const Director = (() => {
     const focus = s.at ?? (s.scenario === 'open' ? { x: 0, y: 0 } : { x: 420, y: -220 });
     const run = { setup: s, rng, state, actors: {}, focus: { ...focus }, flags: { invincible: s.invincible, autopilot: s.autopilot } };
     if (s.playerMass) setMass(state.player, s.playerMass);
-    if (s.scenario !== 'open' && s.scenario !== 'crowded') layLine(state.player, PLAYER_ASIDE.x, PLAYER_ASIDE.y, -2.4);
+    if (!['open', 'crowded', 'playerDown'].includes(s.scenario)) layLine(state.player, PLAYER_ASIDE.x, PLAYER_ASIDE.y, -2.4);
     SCENES[s.scenario](run, s);
     applyPlayerFlags(run);
+    if (run.playerScript && state.player instanceof ActorSnake) state.player.script = run.playerScript;
     for (let i = 0; i < s.warmup; i++) step(run);
     return run;
   }
@@ -253,8 +267,11 @@ const Director = (() => {
     applyPlayerFlags(run);
   }
 
+  // Avant chaque pas : réglages du joueur, et mémoire du dernier joueur vivant (rôle « player »
+  // d'une élimination : la caméra et le moment clé le retrouvent après sa mort).
   function beforeStep(run) {
     applyPlayerFlags(run);
+    if (run.state.player) run.lastPlayer = run.state.player;
   }
 
   function step(run, w = 1280, h = 720) {
@@ -291,7 +308,7 @@ const Director = (() => {
   // Serpent par rôle : « player », un rôle de la scène, « leader » (le plus gros), ou un nom.
   function resolve(run, role) {
     const state = run.state;
-    if (role === 'player') return state.player;
+    if (role === 'player') return state.player ?? run.lastPlayer ?? null;
     if (role === 'leader') return [...state.snakes].sort((a, b) => b.mass - a.mass)[0] ?? null;
     // Un acteur mort est encore renvoyé : la caméra garde sa dernière position.
     if (run.actors[role]) return run.actors[role];

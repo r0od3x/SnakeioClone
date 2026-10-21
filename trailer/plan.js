@@ -50,5 +50,15 @@ const TrailerPlan = {
       "x": 208.19999999999945,
       "y": -220
     }
+  },
+  "eliminated": {
+    "seed": 4,
+    "step": 127,
+    "signature": "{\"setup\":{\"invincible\":false,\"autopilot\":true,\"seed\":4,\"scenario\":\"playerDown\",\"bots\":8},\"key\":{\"event\":\"kill\",\"role\":\"player\"}}",
+    "event": {
+      "type": "kill",
+      "x": 450.63337404432104,
+      "y": 160.5149418167935
+    }
   }
 };

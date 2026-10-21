@@ -37,7 +37,7 @@ const TrailerShots = [
         { t: 7.5, x: 0, y: 0, zoom: 0.24, rotation: 0.2, ease: 'inOutCubic' },
       ],
     },
-    frame: { hud: false, names: false, minimap: false, letterbox: true, preset: 'cinematic' },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'cinematic' },
   },
   {
     id: 'the-trap',
@@ -55,7 +55,7 @@ const TrailerShots = [
       ],
     },
     events: { autoSlowmo: { on: ['kill'], scale: 0.15, inDuration: 0.1, hold: 1, outDuration: 0.7 } },
-    frame: { hud: false, names: false, minimap: false, letterbox: true, preset: 'moody' },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'moody' },
   },
   {
     id: 'near-miss',
@@ -73,7 +73,7 @@ const TrailerShots = [
       ],
     },
     events: { autoSlowmo: { on: ['nearMiss'], scale: 0.1, inDuration: 0.15, hold: 1.8, outDuration: 0.7 } },
-    frame: { hud: false, names: false, minimap: false, letterbox: true, preset: 'cinematic' },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'cinematic' },
   },
   {
     id: 'kill-burst',
@@ -84,7 +84,7 @@ const TrailerShots = [
     post: 4.5,
     camera: { type: 'follow', target: 'victim', zoom: 1.25, lookAhead: 30, smoothing: 0.35 },
     events: { autoSlowmo: { on: ['kill'], scale: 0.12, inDuration: 0.1, hold: 2, outDuration: 1 } },
-    frame: { hud: false, names: false, minimap: false, letterbox: true, preset: 'golden' },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'golden' },
   },
   {
     id: 'cut-off',
@@ -104,7 +104,7 @@ const TrailerShots = [
       ],
     },
     events: { autoSlowmo: { on: ['kill'], scale: 0.15, inDuration: 0.08, hold: 0.9, outDuration: 0.6 } },
-    frame: { hud: false, names: false, minimap: false, letterbox: true, preset: 'cinematic' },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'cinematic' },
   },
   {
     id: 'underdog',
@@ -123,7 +123,7 @@ const TrailerShots = [
       ],
     },
     events: { autoSlowmo: { on: ['kill'], scale: 0.12, inDuration: 0.08, hold: 1.2, outDuration: 0.8 } },
-    frame: { hud: false, names: false, minimap: false, letterbox: true, preset: 'golden' },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'golden' },
   },
   {
     id: 'growth-spurt',
@@ -137,7 +137,7 @@ const TrailerShots = [
         { t: 6, target: 'grower', zoom: 1.1, ease: 'inOutSine' },
       ],
     },
-    frame: { hud: false, names: false, minimap: false, letterbox: true, preset: 'cinematic' },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'cinematic' },
   },
   {
     id: 'crowded-finale',
@@ -151,6 +151,52 @@ const TrailerShots = [
         { t: 6, x: 420, y: -220, zoom: 0.55, rotation: 0.08, ease: 'inOutCubic' },
       ],
     },
-    frame: { hud: false, names: false, minimap: false, letterbox: true, preset: 'cinematic' },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'cinematic' },
+  },
+  {
+    id: 'ai-vision',
+    notes: 'Vue debug : chaque IA montre ce qu\'elle voit (rayon de perception), ce qu\'elle vise et sa décision.',
+    duration: 7,
+    setup: { seed: 21, scenario: 'crowded', bots: 30, food: 900, spread: 600, warmup: 90 },
+    camera: {
+      type: 'keyframes',
+      keys: [
+        { t: 0, target: 'leader', zoom: 1.6 },
+        { t: 7, target: 'leader', zoom: 1.15, rotation: 0.06, ease: 'inOutSine' },
+      ],
+    },
+    frame: { hud: false, names: false, minimap: false, debug: true, letterbox: false, preset: 'none' },
+  },
+  {
+    id: 'hunt',
+    notes: 'Le plus gros serpent de l\'arène fend la foule ; l\'interface du jeu montre le classement en direct.',
+    duration: 7,
+    setup: { seed: 9, scenario: 'crowded', bots: 30, food: 900, spread: 700, warmup: 240 },
+    camera: { type: 'follow', target: 'leader', zoom: 1.05, lookAhead: 30, smoothing: 0.4 },
+    frame: { hud: true, names: true, minimap: true, letterbox: false, preset: 'golden' },
+  },
+  {
+    id: 'species-parade',
+    notes: 'Lent travelling au ras de la prairie : corail, mamba, crotale, python vert… douze espèces.',
+    duration: 7,
+    setup: { seed: 4, scenario: 'crowded', bots: 36, food: 900, spread: 520, warmup: 60 },
+    camera: {
+      type: 'keyframes',
+      keys: [
+        { t: 0, x: 120, y: -260, zoom: 2.1, rotation: -0.05 },
+        { t: 7, x: 720, y: -180, zoom: 1.9, rotation: 0.04, ease: 'linear' },
+      ],
+    },
+    frame: { hud: false, names: false, minimap: false, letterbox: false, preset: 'cinematic' },
+  },
+  {
+    id: 'eliminated',
+    notes: 'Notre serpent se fait couper la route et meurt : des centaines de rats accourent écrire « Éliminé ».',
+    setup: { seed: 4, scenario: 'playerDown', bots: 8, invincible: false, autopilot: true },
+    key: { event: 'kill', role: 'player' },
+    pre: 1.5,
+    post: 4.5,
+    camera: { type: 'game' },
+    frame: { hud: true, names: false, minimap: false, letterbox: false, preset: 'none' },
   },
 ];
