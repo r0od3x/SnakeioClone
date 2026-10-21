@@ -33,16 +33,16 @@ const FILES = ['vehicle.js', 'debugMode.js', 'wander.js', 'snakeSpecies.js', 'sn
 
 // Fichiers des outils de tournage (trailer/), chargés après le jeu.
 export const TRAILER = ['trailer/easing.js', 'trailer/cameras.js', 'trailer/timeControl.js', 'trailer/interpolation.js',
-  'trailer/actorSnake.js', 'trailer/director.js', 'trailer/eventDetector.js', 'trailer/grade.js', 'trailer/canvasHud.js', 'trailer/shots.js',
-  'trailer/shotPlayer.js', 'trailer/recorder.js'];
+  'trailer/actorSnake.js', 'trailer/director.js', 'trailer/eventDetector.js', 'trailer/keyMoment.js', 'trailer/impact.js', 'trailer/grade.js', 'trailer/canvasHud.js',
+  'trailer/shots.js', 'trailer/shotPlayer.js', 'trailer/recorder.js', 'trailer/capture.js'];
 const TRAILER_NAMES = ['Easing', 'CameraRig', 'TimeControl', 'Interpolation', 'ActorSnake', 'Director', 'EventDetector',
-  'Grade', 'CanvasHud', 'TrailerShots', 'ShotPlayer', 'Recorder'];
+  'KeyMoment', 'Impact', 'Grade', 'CanvasHud', 'TrailerShots', 'ShotPlayer', 'Recorder', 'TrailerCapture'];
 
 export function load(w = 800, h = 600, extra = []) {
   const draws = [];
   const stubs = Object.fromEntries(DRAWING.map(name => [name, (...args) => draws.push([name, ...args])]));
   const context = vm.createContext({ createVector: (x, y) => new Vector(x, y),
-    p5: { Vector }, width: w, height: h, ...stubs });
+    p5: { Vector }, width: w, height: h, URLSearchParams, ...stubs });
   for (const file of FILES) {
     vm.runInContext(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'), context);
   }

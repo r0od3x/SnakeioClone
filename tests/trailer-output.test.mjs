@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { load, seededRng } from './harness.mjs';
 
 const FILES = ['trailer/easing.js', 'trailer/cameras.js', 'trailer/timeControl.js', 'trailer/actorSnake.js', 'trailer/director.js',
-  'trailer/grade.js', 'trailer/canvasHud.js', 'trailer/shots.js', 'trailer/shotPlayer.js', 'trailer/recorder.js'];
+  'trailer/eventDetector.js', 'trailer/keyMoment.js', 'trailer/grade.js', 'trailer/canvasHud.js', 'trailer/shots.js', 'trailer/shotPlayer.js', 'trailer/recorder.js'];
 
 // Faux contexte 2D : enregistre les appels et les réglages.
 function fakeContext(width = 1920, height = 1080) {
@@ -104,10 +104,12 @@ test('lecture des plans : horloge, actions datées dans l\'ordre, fin, suivant /
 });
 
 test('les plans d\'exemple se préparent et tournent sans erreur (prise, rôles des caméras)', () => {
-  const { TrailerShots, Director, CameraRig, TimeControl, arena } = load(800, 600, FILES);
-  for (const shot of TrailerShots) {
+  const { TrailerShots, Director, CameraRig, TimeControl, KeyMoment, arena } = load(800, 600, FILES);
+  for (const original of TrailerShots) {
+    // Plan à moment clé : instants fromKey convertis, 'key' = lieu (fictif ici) du moment clé.
+    const shot = KeyMoment.hasKey(original) ? KeyMoment.prepare(original, { step: 240, event: { x: 0, y: 0 } }) : original;
     const run = Director.newRun(shot.setup, {});
-    const resolve = name => Director.resolve(run, name);
+    const resolve = name => (name === 'key' ? shot.keyEvent && { pos: shot.keyEvent } : Director.resolve(run, name));
     for (const name of [shot.camera.target, ...(shot.camera.keys ?? []).map(k => k.target), ...(shot.cues ?? []).map(c => c.target)]) {
       if (name) assert.ok(resolve(name), `${shot.id} : cible ${name}`);
     }

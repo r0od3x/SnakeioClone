@@ -127,7 +127,7 @@ const StudioPanel = (() => {
       section('Image', false, ...frameChecks, row('Étalonnage', live.preset, el('span', { class: 'hint' }, 'G')),
         el('p', { class: 'hint' }, 'H : image propre (sans interface, noms, mini-carte) · B : bandes noires.')),
       section('Enregistrement', true,
-        row('Sortie', select(ctx.OUTPUTS.map(o => [o, { window: 'Fenêtre', '1080p': '1920 × 1080', '1440p': '2560 × 1440', '4k': '3840 × 2160' }[o]]), s.output, v => act.setOutput(v))),
+        row('Sortie', select(ctx.OUTPUTS.map(o => [o, { window: 'Fenêtre', '540p': '960 × 540 (brouillon)', '720p': '1280 × 720', '1080p': '1920 × 1080', '1440p': '2560 × 1440', '4k': '3840 × 2160' }[o]]), s.output, v => act.setOutput(v))),
         el('div', { class: 'buttons' }, live.recordButton, button('Capture 2×', () => act.screenshot(2), 'F8'), button('Capture 4×', () => act.screenshot(4), 'Maj+F8')),
         live.format));
     parent.append(root);

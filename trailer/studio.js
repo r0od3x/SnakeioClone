@@ -7,7 +7,10 @@
 const TrailerStudio = (() => {
   const DT = 1 / 60;
   const TIME_PRESETS = [0.1, 0.25, 0.5, 1, 2];
-  const OUTPUTS = { window: null, '1080p': [1920, 1080], '1440p': [2560, 1440], '4k': [3840, 2160] };
+  const OUTPUTS = { window: null, '540p': [960, 540], '720p': [1280, 720], '1080p': [1920, 1080], '1440p': [2560, 1440], '4k': [3840, 2160] };
+  // Cadrage de référence (largeur en px) : avec framing, le zoom est multiplié par largeur / 1920,
+  // pour qu'un brouillon 540p montre exactement ce que montrera la version 1080p.
+  const REFERENCE_WIDTH = 1920;
   const SANDBOX_SLOWMO = { on: ['kill', 'nearMiss', 'encircle'], scale: 0.2, inDuration: 0.3, hold: 1.2, outDuration: 0.8 };
 
   const s = {
@@ -19,9 +22,15 @@ const TrailerStudio = (() => {
     frame: { hud: true, names: true, minimap: true, vignette: true, debug: false, letterbox: false, preset: 'none' },
     auto: { slowmo: false, cut: false },
     shot: null, recordShots: false, events: [], message: '', drag: null,
+    // Capture : cadrage de référence, caméra réellement dessinée, événements et bruitages de l'image.
+    framing: null, renderCamera: null, frameEvents: [], frameSfx: [],
+    // Effets d'impact (impact.js) et horloge du film (s), qui avance de DT par image affichée.
+    fx: null, clock: 0,
   };
 
+  // Cible de caméra par nom ; 'key' : le lieu du moment clé du plan (point fixe).
   function resolver(name) {
+    if (name === 'key' && s.shot?.keyEvent) return { pos: { ...s.shot.keyEvent } };
     return Director.resolve(s.run, name);
   }
 
@@ -31,12 +40,16 @@ const TrailerStudio = (() => {
   }
 
   // ---------- Prises ----------
-  function newRun(setup) {
+  // Profil neutre des plans : une prise ne dépend pas du profil enregistré dans ce navigateur.
+  const SHOT_PROFILE = { name: 'Toi', species: null };
+
+  function newRun(setup, profile = s.profile) {
     // Les réglages du panneau (invincible, pilote auto) s'appliquent sauf si la prise les fixe.
-    s.run = Director.newRun({ ...s.flags, ...setup }, s.profile);
+    s.run = Director.newRun({ ...s.flags, ...setup }, profile);
     s.flags = { ...s.run.flags };
     s.tc = TimeControl.create();
     s.det = EventDetector.create();
+    s.fx = Impact.create();
     s.prev = null;
     s.ratTitle = RatTitle.create();
     s.events = [];
@@ -81,17 +94,40 @@ const TrailerStudio = (() => {
   }
 
   function applyFrame(frame = {}) {
-    s.frame = { hud: true, names: true, minimap: true, vignette: true, debug: false, letterbox: false, preset: 'none', ...frame };
+    s.frame = { hud: true, names: true, minimap: true, vignette: true, debug: false, letterbox: false, preset: 'none', vfx: true, ...frame };
     s.letterbox = s.frame.letterbox ? 1 : 0;
   }
 
-  function loadShot(shot) {
-    if (!shot) return;
-    newRun(shot.setup ?? {});
+  // Moment clé : graine et pas trouvés par le planificateur (trailer/plan.js) si le plan n'a pas
+  // changé, sinon répétition à blanc ici même. null si le moment n'arrive pas.
+  function prepareShot(shot) {
+    if (!KeyMoment.hasKey(shot)) return shot;
+    const planned = typeof TrailerPlan !== 'undefined' ? TrailerPlan[shot.id] : null;
+    if (planned && planned.signature === KeyMoment.signature(shot, s.flags)) return KeyMoment.prepare(shot, planned);
+    const setup = { ...s.flags, ...(shot.setup ?? {}) };
+    const found = KeyMoment.find(setup, shot.key, KeyMoment.options(shot).search * KeyMoment.STEPS_PER_SECOND, SHOT_PROFILE);
+    if (!found) {
+      say(`Plan ${shot.id} : le moment clé n'arrive pas (essayer npm run trailer:plan)`);
+      return null;
+    }
+    return KeyMoment.prepare(shot, found);
+  }
+
+  function loadShot(original) {
+    if (!original) return;
+    const shot = prepareShot(original);
+    if (!shot) {
+      ShotPlayer.stop(s.shots);
+      s.shot = null;
+      return;
+    }
+    if (shot !== original) ShotPlayer.usePrepared(s.shots, shot);
+    newRun(shot.setup ?? {}, SHOT_PROFILE);
     applyFrame(shot.frame);
     TimeControl.setCurve(s.tc, shot.time);
-    setupCamera(shot.camera);
+    // Avant la caméra : la cible 'key' (lieu du moment clé) se lit dans s.shot.
     s.shot = shot;
+    setupCamera(shot.camera);
     if (s.recordShots && s.rec.supported) s.rec.start(shot.id);
     say(`Plan ${shot.id}${s.rec.recording ? ' · enregistrement' : ''}`);
   }
@@ -143,6 +179,7 @@ const TrailerStudio = (() => {
     const slowmo = s.shot ? s.shot.events?.autoSlowmo : (s.auto.slowmo ? SANDBOX_SLOWMO : null);
     const cut = s.shot ? s.shot.events?.autoCut : s.auto.cut;
     for (const e of events) {
+      if (s.frame.vfx) Impact.add(s.fx, e, s.clock);
       s.events.unshift({ type: e.type, frame: s.run.state.frame });
       if (slowmo && slowmo.on.includes(e.type) && !s.tc.ramp) TimeControl.rampTo(s.tc, slowmo.scale, slowmo);
       if (cut) {
@@ -165,7 +202,12 @@ const TrailerStudio = (() => {
     s.prev = s.tc.scale < 1 ? Interpolation.capture(state) : null;
     const before = EventDetector.snapshot(state);
     SnakeArena.step(state, w, h, s.run.rng);
-    handleEvents(EventDetector.detect(s.det, state, before));
+    const events = EventDetector.detect(s.det, state, before);
+    s.frameEvents.push(...events);
+    // Bruitages du pas (ce que snakeSounds jouerait) : relevés pour une future piste son.
+    const sfx = Object.entries(state.events ?? {}).filter(([, v]) => v);
+    if (sfx.length) s.frameSfx.push({ step: state.frame, ...Object.fromEntries(sfx) });
+    handleEvents(events);
   }
 
   // Dessin complet d'une image dans ctx (pixels CSS w × h) : écran, capture haute résolution.
@@ -173,8 +215,13 @@ const TrailerStudio = (() => {
     const state = s.run.state;
     const restore = Interpolation.apply(state, s.prev, s.alpha);
     const gameCamera = state.camera;
-    state.camera = { ...s.rig.cam };
+    const k = s.framing ? w / s.framing : 1;
+    state.camera = { ...s.rig.cam, zoom: s.rig.cam.zoom * k };
+    if (live) s.renderCamera = { ...state.camera };
+    const unpop = s.frame.vfx ? Impact.popFoods(s.fx, state.foods, s.clock) : () => {};
     SnakeArena.show(state, w, h, { ctx, names: s.frame.names, minimap: s.frame.minimap, vignette: s.frame.vignette, debug: s.frame.debug });
+    unpop();
+    if (s.frame.vfx) Impact.draw(ctx, s.fx, state.camera, w, h, s.clock);
     state.camera = gameCamera;
     restore();
     if (s.frame.hud) {
@@ -212,6 +259,9 @@ const TrailerStudio = (() => {
       if (ended) endShot();
     }
     freeCameraKeys();
+    s.clock += DT;
+    s.frameEvents = [];
+    s.frameSfx = [];
     const { steps, alpha } = TimeControl.advance(s.tc, DT);
     for (let i = 0; i < steps; i++) simulate(w, h);
     s.alpha = alpha;
@@ -279,6 +329,7 @@ const TrailerStudio = (() => {
     replayShot: () => playShot(s.shots.index, false),
     playAll: () => playShot(0, true),
     setRecordShots: on => { s.recordShots = Boolean(on); },
+    setFraming: on => { s.framing = on ? REFERENCE_WIDTH : null; },
     setCameraMode: mode => {
       if (mode === 'follow') CameraRig.follow(s.rig, s.rig.follow.target ?? s.run.state.player ?? resolver('leader'));
       else CameraRig.setMode(s.rig, mode);
@@ -422,8 +473,10 @@ const TrailerStudio = (() => {
     bindPointer(canvas);
     StudioPanel.build(document.body, { state: s, act, TIME_PRESETS, OUTPUTS: Object.keys(OUTPUTS), problems });
     say('Trailer Studio prêt · F9 : panneau');
+    // index.html?studio&capture=<plan> : capture image par image vers l'enregistreur local.
+    if (typeof TrailerCapture !== 'undefined' && TrailerCapture.requested()) TrailerCapture.start();
   }
 
-  return { DT, TIME_PRESETS, OUTPUTS, init, frame, keyPressed, windowResized, act, state: s,
+  return { DT, TIME_PRESETS, OUTPUTS, REFERENCE_WIDTH, init, frame, keyPressed, windowResized, act, state: s,
     get active() { return s.active; } };
 })();

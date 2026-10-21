@@ -85,6 +85,8 @@ const SnakePainter = (() => {
 
   // Ombre portée floue sur l'herbe : on dessine la forme très loin hors écran et on ne garde
   // que son ombre, ramenée sous le serpent (les ombres ignorent la transformation du canvas).
+  // Le décalage annule le déplacement réel à l'écran (far × colonne x de la matrice), ce qui
+  // reste juste quand la caméra est tournée ; la direction de l'ombre reste fixe à l'écran.
   function castShadow(ctx, draw, r) {
     const m = ctx.getTransform();
     const scale = Math.hypot(m.a, m.b) || 1;
@@ -93,8 +95,8 @@ const SnakePainter = (() => {
     ctx.translate(-far, 0);
     ctx.shadowColor = 'rgba(14, 24, 6, 0.55)';
     ctx.shadowBlur = r * 0.9 * scale;
-    ctx.shadowOffsetX = far * scale + r * 0.45 * scale;
-    ctx.shadowOffsetY = r * 0.7 * scale;
+    ctx.shadowOffsetX = far * m.a + r * 0.45 * scale;
+    ctx.shadowOffsetY = far * m.b + r * 0.7 * scale;
     ctx.fillStyle = '#000000';
     draw();
     ctx.fill();
@@ -472,5 +474,5 @@ const SnakePainter = (() => {
     ctx.restore();
   }
 
-  return { LIGHT, TAPER_START, TAIL_WIDTH, widthAt, points, normals, offset, outline, hash, draw };
+  return { LIGHT, TAPER_START, TAIL_WIDTH, widthAt, points, normals, offset, outline, hash, castShadow, draw };
 })();

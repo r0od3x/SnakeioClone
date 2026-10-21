@@ -6,7 +6,9 @@
 // - { kind: 'orbit', center, radius, dir } : tourne autour d'un point ou d'un serpent ;
 // - { kind: 'heading', angle } : va tout droit dans une direction ;
 // - { kind: 'seek', target } : vise un point, un serpent ou une fonction qui renvoie un point.
-// Options : frames (durée en pas de jeu, ensuite l'IA reprend), boost (accélérer).
+// Options : frames (durée en pas de jeu, ensuite l'IA reprend), boost (accélérer),
+// then (script suivant quand frames est écoulé, au lieu de l'IA).
+// Orbite : shrink (px par pas) resserre le rayon jusqu'à minRadius (piège qui se referme).
 class ActorSnake extends SnakeBot {
   // Distance d'anticipation sur l'orbite (px) : plus grande = trajectoire plus douce.
   static ORBIT_LEAD = 70;
@@ -38,7 +40,9 @@ class ActorSnake extends SnakeBot {
   }
 
   steer(world) {
-    if (this.script && this.script.frames !== undefined && this.script.frames-- <= 0) this.script = null;
+    if (this.script && this.script.frames !== undefined && this.script.frames-- <= 0) this.script = this.script.then ?? null;
+    const s = this.script;
+    if (s?.kind === 'orbit' && s.shrink) s.radius = Math.max(s.minRadius ?? 0, s.radius - s.shrink);
     const p = this.scriptPoint();
     if (!p) return super.steer(world);
     this.mode = 'script';

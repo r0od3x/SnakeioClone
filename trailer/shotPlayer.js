@@ -12,7 +12,13 @@ const ShotPlayer = (() => {
     const where = `plan ${shot?.id ?? '?'}`;
     if (!shot || typeof shot !== 'object') return ['plan absent'];
     if (typeof shot.id !== 'string' || !ID.test(shot.id)) errors.push(`${where} : id invalide (lettres, chiffres, - et _)`);
-    if (!(shot.duration > 0)) errors.push(`${where} : duration doit être > 0`);
+    const key = shot.key;
+    if (key) {
+      if (!EVENTS.includes(key.event) && !Number.isFinite(key.step)) errors.push(`${where} : key.event (${EVENTS.join(', ')}) ou key.step attendu`);
+      if (shot.pre !== undefined && !(shot.pre >= 0)) errors.push(`${where} : pre doit être >= 0`);
+      if (shot.post !== undefined && !(shot.post > 0)) errors.push(`${where} : post doit être > 0`);
+      if (shot.duration !== undefined && !(shot.duration > 0)) errors.push(`${where} : duration doit être > 0`);
+    } else if (!(shot.duration > 0)) errors.push(`${where} : duration doit être > 0`);
     const scenario = shot.setup?.scenario ?? 'open';
     if (typeof Director !== 'undefined' && !Director.SCENARIOS.includes(scenario)) errors.push(`${where} : scène inconnue ${scenario}`);
     const type = shot.camera?.type ?? 'game';
@@ -20,14 +26,17 @@ const ShotPlayer = (() => {
     if (type === 'keyframes') {
       const keys = shot.camera.keys;
       if (!Array.isArray(keys) || !keys.length) errors.push(`${where} : keyframes sans images-clés`);
-      else if (keys.some((k, i) => !Number.isFinite(k.t) || (i && k.t < keys[i - 1].t))) errors.push(`${where} : images-clés non triées`);
+      else if (!key && keys.some((k, i) => !Number.isFinite(k.t) || (i && k.t < keys[i - 1].t))) errors.push(`${where} : images-clés non triées`);
+      else if (key && keys.some(k => !Number.isFinite(k.t) && !Number.isFinite(k.fromKey))) errors.push(`${where} : image-clé sans t ni fromKey`);
     }
     if (type === 'follow' && !shot.camera.target) errors.push(`${where} : follow sans target`);
     for (const p of shot.time ?? []) {
-      if (!Number.isFinite(p.t) || !(p.scale > 0)) errors.push(`${where} : point de temps invalide`);
+      if (!(Number.isFinite(p.t) || (key && Number.isFinite(p.fromKey))) || !(p.scale > 0)) errors.push(`${where} : point de temps invalide`);
     }
+    // fromKey : instant relatif au moment clé (plans avec key seulement).
+    const timed = item => Number.isFinite(item.t) || (key && Number.isFinite(item.fromKey));
     for (const cue of shot.cues ?? []) {
-      if (!ACTIONS.includes(cue.action) || !Number.isFinite(cue.t)) errors.push(`${where} : action invalide ${cue.action}`);
+      if (!ACTIONS.includes(cue.action) || !timed(cue)) errors.push(`${where} : action invalide ${cue.action}`);
     }
     for (const type of shot.events?.autoSlowmo?.on ?? []) {
       if (!EVENTS.includes(type)) errors.push(`${where} : événement inconnu ${type}`);
@@ -57,8 +66,15 @@ const ShotPlayer = (() => {
     player.index = ((index % n) + n) % n;
     player.time = 0;
     player.playing = true;
+    player.prepared = null;
     player.pending = [...(current(player).cues ?? [])].sort((a, b) => a.t - b.t);
     return current(player);
+  }
+
+  // Plan préparé (moment clé : durée et instants recalculés, voir keyMoment.js).
+  function usePrepared(player, prepared) {
+    player.prepared = prepared;
+    player.pending = [...(prepared.cues ?? [])].sort((a, b) => a.t - b.t);
   }
 
   function next(player) {
@@ -81,10 +97,10 @@ const ShotPlayer = (() => {
     player.time += dt;
     const cues = [];
     while (player.pending.length && player.pending[0].t <= player.time) cues.push(player.pending.shift());
-    const ended = player.time >= current(player).duration;
+    const ended = player.time >= (player.prepared ?? current(player)).duration;
     if (ended) player.playing = false;
     return { cues, ended };
   }
 
-  return { ACTIONS, EVENTS, validate, validateAll, create, current, start, next, previous, stop, tick };
+  return { ACTIONS, EVENTS, validate, validateAll, create, current, start, usePrepared, next, previous, stop, tick };
 })();

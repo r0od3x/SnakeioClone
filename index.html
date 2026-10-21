@@ -31,7 +31,7 @@
       if (new URLSearchParams(location.search).has('studio')) {
         document.write('<link rel="stylesheet" href="trailer/panel.css">');
         for (const file of ['easing', 'cameras', 'timeControl', 'interpolation', 'actorSnake', 'director', 'eventDetector',
-          'grade', 'canvasHud', 'shots', 'shotPlayer', 'recorder', 'panel', 'studio']) {
+          'grade', 'canvasHud', 'impact', 'keyMoment', 'shots', 'plan', 'shotPlayer', 'recorder', 'panel', 'studio', 'capture']) {
           document.write(`<script src="trailer/${file}.js"><\/script>`);
         }
       }

@@ -4,10 +4,11 @@
 // Les scènes posent les serpents au départ (c'est la préparation du plateau) ; ensuite tout
 // bouge par steering. Rôles nommés (run.actors) pour les caméras : hunter, prey, victim…
 const Director = (() => {
-  const SCENARIOS = ['open', 'encircle', 'nearMiss', 'killBurst', 'growth', 'crowded'];
+  const SCENARIOS = ['open', 'encircle', 'nearMiss', 'killBurst', 'cutOff', 'underdog', 'growth', 'crowded'];
   const LABELS = {
     open: 'Partie libre', encircle: 'Encerclement', nearMiss: 'Frôlement tête-à-tête',
-    killBurst: 'Élimination en orbes', growth: 'Croissance express', crowded: 'Arène bondée',
+    killBurst: 'Élimination en orbes', cutOff: 'Coupe la route', underdog: 'Le petit contre le géant',
+    growth: 'Croissance express', crowded: 'Arène bondée',
   };
   const DEFAULTS = {
     seed: 1, scenario: 'open', bots: 12, food: 450, playerMass: null, playerSpecies: null,
@@ -16,7 +17,8 @@ const Director = (() => {
   // Le joueur est écarté des scènes, à cet endroit.
   const PLAYER_ASIDE = { x: -900, y: 700 };
   const ACTOR_NAMES = { hunter: 'Titan', prey: 'Brindille', a: 'Éclair', b: 'Tonnerre', victim: 'Fonceur',
-    killer: 'Muraille', grower: 'Glouton' };
+    killer: 'Muraille', grower: 'Glouton', giant: 'Goliath', small: 'Fronde' };
+  const SCAVENGER_NAMES = ['Charognard', 'Rôdeur', 'Pique-assiette', 'Glaneur', 'Vautour', 'Furtif', 'Opportuniste', 'Croqueur'];
 
   // Générateur à graine (mulberry32) : tout l'aléatoire de la prise passe par lui.
   function seeded(seed) {
@@ -85,6 +87,19 @@ const Director = (() => {
     return actor;
   }
 
+  // Serpents laissés à leur IA autour d'un point : ils foncent sur les orbes d'une élimination.
+  // Placés sur l'arc [from, to] (radians), pour ne pas naître sur le corps d'un acteur.
+  function scavengers(run, center, count, distance, mass, from = 0.4, to = from + Math.PI * 2) {
+    const full = Math.abs(to - from - Math.PI * 2) < 1e-9;
+    for (let i = 0; i < count; i++) {
+      const a = from + (to - from) * (full ? i / count : i / Math.max(1, count - 1));
+      const x = center.x + Math.cos(a) * distance;
+      const y = center.y + Math.sin(a) * distance;
+      // Tournés vers le centre, en tangente : ils arrivent en tourbillon.
+      spawnActor(run, `scavenger${i + 1}`, { x, y, angle: a + Math.PI * 0.75, mass: mass * (0.7 + 0.6 * run.rng()), name: SCAVENGER_NAMES[i % SCAVENGER_NAMES.length] });
+    }
+  }
+
   // ---------- Scènes ----------
   const SCENES = {
     open() {},
@@ -93,8 +108,10 @@ const Director = (() => {
     encircle(run, s) {
       const c = run.focus;
       const hunter = spawnActor(run, 'hunter', { x: c.x, y: c.y, mass: s.giantMass ?? 650, species: s.giantSpecies ?? 'kingCobra', invulnerable: true });
-      const r = Math.max(140, hunter.bodyLength() * 0.8 / (Math.PI * 2));
-      hunter.script = { kind: 'orbit', center: c, radius: r, dir: 1 };
+      // ring : part de la circonférence couverte par le corps (plus de 1 : l'anneau se chevauche, sans sortie).
+      const r = Math.max(140, hunter.bodyLength() * (s.ring ?? 0.8) / (Math.PI * 2));
+      // tighten (px par pas) : l'anneau se resserre jusqu'à minRadius, la proie finit par le toucher.
+      hunter.script = { kind: 'orbit', center: c, radius: r, dir: 1, shrink: s.tighten ?? 0, minRadius: s.minRadius ?? 60 };
       layArc(hunter, c, r, 0, 1);
       const prey = spawnActor(run, 'prey', { x: c.x + r * 0.35, y: c.y, angle: -Math.PI / 2, mass: s.preyMass ?? 45, species: s.preySpecies ?? 'corn',
         script: { kind: 'orbit', center: c, radius: r * 0.35, dir: -1, frames: s.release ?? 360 } });
@@ -124,6 +141,33 @@ const Director = (() => {
       const middle = () => killer.body[Math.floor(killer.body.length * 0.55)] ?? killer;
       spawnActor(run, 'victim', { x: c.x - 520, y: c.y, angle: 0, mass: s.victimMass ?? 320, species: s.victimSpecies ?? 'diamondback',
         script: { kind: 'seek', target: middle, boost: true } });
+    },
+
+    // Coupe la route : le tueur accélère le long de la victime, la dépasse et se rabat devant
+    // elle ; la victime, qui file tout droit, s'écrase sur son corps. Des charognards attendent.
+    cutOff(run, s) {
+      const c = run.focus;
+      const victim = spawnActor(run, 'victim', { x: c.x - 520, y: c.y + 40, angle: 0, mass: s.victimMass ?? 320, species: s.victimSpecies ?? 'diamondback',
+        script: { kind: 'heading', angle: 0, frames: 900 } });
+      const ahead = () => ({ x: victim.pos.x + (s.cutAhead ?? 150), y: victim.pos.y + (s.cutDepth ?? 170) });
+      spawnActor(run, 'killer', { x: c.x - 620, y: c.y - (s.lane ?? 70), angle: 0, mass: s.killerMass ?? 420, species: s.killerSpecies ?? 'kingCobra', invulnerable: true,
+        script: { kind: 'heading', angle: 0, boost: true, frames: s.overtake ?? 110, then: { kind: 'seek', target: ahead, boost: true, frames: 80 } } });
+      scavengers(run, { x: c.x + 60, y: c.y + 60 }, s.scavengers ?? 5, s.scavengerDistance ?? 620, s.scavengerMass ?? 70);
+    },
+
+    // Le petit contre le géant : un petit serpent coupe la trajectoire d'un géant, qui s'écrase
+    // sur son corps et explose en un champ d'orbes ; les charognards se ruent dessus.
+    underdog(run, s) {
+      const c = run.focus;
+      const giant = spawnActor(run, 'giant', { x: c.x - (s.giantStart ?? 620), y: c.y, angle: 0, mass: s.giantMass ?? 900, species: s.giantSpecies ?? 'kingCobra',
+        script: { kind: 'heading', angle: 0, frames: 900 } });
+      const front = () => ({ x: giant.pos.x + giant.vel.x * (s.lead ?? 16), y: giant.pos.y + giant.vel.y * (s.lead ?? 16) });
+      // Le petit descend tranquillement (wait pas), puis accélère et coupe la route du géant.
+      spawnActor(run, 'small', { x: c.x + (s.smallX ?? 20), y: c.y - (s.smallY ?? 420), angle: Math.PI / 2, mass: s.smallMass ?? 60, species: s.smallSpecies ?? 'coral',
+        invulnerable: true, script: { kind: 'heading', angle: Math.PI / 2, frames: s.wait ?? 100,
+          then: { kind: 'seek', target: front, boost: true, frames: s.cut ?? 70, then: { kind: 'heading', angle: Math.PI / 2, boost: true, frames: 40 } } } });
+      // Charognards du côté libre (le corps du géant s'étend loin vers l'ouest).
+      scavengers(run, { x: c.x + 60, y: c.y }, s.scavengers ?? 7, s.scavengerDistance ?? 720, s.scavengerMass ?? 90, -Math.PI * 0.6, Math.PI * 0.6);
     },
 
     // Un petit serpent avale une traînée de proies et grossit à vue d'œil.
