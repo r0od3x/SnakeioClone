@@ -268,7 +268,7 @@ export const TRAILER = {
     {
       slug: 'appel', section: 'appel', beats: 6, title: 'Appel à l\'action',
       action: 'Play free in the browser, link to the repository.', camera: 'Card', move: 'pull', transition: 'dip', fadeOut: true,
-      card: { kind: 'cta', line: 'Gratuit, dans ton navigateur.', link: 'github.com/r0od3x/SnakeIO' }, subject: '—',
+      card: { kind: 'cta', line: 'Gratuit, dans ton navigateur.', link: 'github.com/r0od3x/SnakeioClone' }, subject: '—',
       music: 'Outro, fade out.', sound: 'One soft hiss.', sfx: [{ at: 0.3, type: 'hiss', dur: 1.4 }],
     },
   ],

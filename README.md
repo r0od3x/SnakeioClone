@@ -2,6 +2,8 @@
 
 Un Snake.io dans une prairie, avec douze espèces de serpents réalistes. Les serpents IA sont pilotés par les *steering behaviors* de Craig W. Reynolds (« Steering Behaviors for Autonomous Characters », GDC 1999). Le jeu est en p5.js, sans dépendance à installer, avec un mode solo et un mode en réseau local.
 
+**Jouer en ligne : https://r0od3x.github.io/SnakeioClone/**
+
 ## Jouer en solo
 
 Ouvre `index.html` dans un navigateur, ou sers le dossier :
