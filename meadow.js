@@ -319,6 +319,51 @@ const Meadow = (() => {
     }
   }
 
+  // Le sol ne bouge pas : il est dessiné une fois par carré de CHUNK px du monde, gardé en cache
+  // (les MAX_CHUNKS derniers utilisés), et chaque image ne fait qu'une vingtaine de drawImage.
+  // Les carrés débordent d'1 px de chaque côté pour qu'aucun joint ne se voie entre eux.
+  const CHUNK = 512;
+  const chunks = new Map();
+  let chunkRes = 1;
+
+  function chunk(i, j, radius) {
+    const key = `${i},${j},${radius}`;
+    let c = chunks.get(key);
+    if (c) {
+      chunks.delete(key);
+      chunks.set(key, c);
+      return c;
+    }
+    const size = CHUNK + 2;
+    c = makeCanvas(Math.ceil(size * chunkRes));
+    const g = c.getContext('2d');
+    const left = i * CHUNK - 1;
+    const top = j * CHUNK - 1;
+    g.scale(chunkRes, chunkRes);
+    g.translate(-left, -top);
+    draw(g, { left, top, right: left + size, bottom: top + size }, radius);
+    chunks.set(key, c);
+    // Le moins récemment vu part en premier.
+    if (chunks.size > (chunkRes === 1 ? 64 : 36)) chunks.delete(chunks.keys().next().value);
+    return c;
+  }
+
+  // Comme draw, en passant par le cache. Gros plans (zoom > 1,1, outils de tournage) : carrés
+  // en double résolution pour rester nets.
+  function drawCached(ctx, view, radius, zoom = 1) {
+    if (typeof document === 'undefined') return draw(ctx, view, radius);
+    const res = zoom > 1.1 ? 2 : 1;
+    if (res !== chunkRes) {
+      chunks.clear();
+      chunkRes = res;
+    }
+    for (let j = Math.floor(view.top / CHUNK); j * CHUNK < view.bottom; j++) {
+      for (let i = Math.floor(view.left / CHUNK); i * CHUNK < view.right; i++) {
+        ctx.drawImage(chunk(i, j, radius), i * CHUNK - 1, j * CHUNK - 1, CHUNK + 2, CHUNK + 2);
+      }
+    }
+  }
+
   // Ombres de nuages qui glissent lentement (par-dessus les serpents).
   function clouds(ctx, view, frame) {
     const tile = blobTile('clouds', 19, ['10, 22, 6'], 9, 0.2);
@@ -331,5 +376,5 @@ const Meadow = (() => {
     ctx.fillRect(view.left, view.top, view.right - view.left, view.bottom - view.top);
   }
 
-  return { TILE, PATCH, STONE_GAP, seeded, decorations, stones, draw, clouds, drawRock: rock };
+  return { TILE, PATCH, STONE_GAP, seeded, decorations, stones, draw, drawCached, clouds, drawRock: rock };
 })();

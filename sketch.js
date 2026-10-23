@@ -10,6 +10,11 @@ let pressedOnCanvas = false;
 const params = SnakeArena.initialParams();
 const profile = Profile.load();
 const snakeSounds = SnakeSounds.create();
+// La simulation avance à 60 pas par seconde quel que soit l'écran : les images perdues sont
+// rattrapées (au plus MAX_STEPS pas par image), et un écran à 120 / 144 Hz n'accélère pas le jeu.
+const STEP_MS = 1000 / 60;
+const MAX_STEPS = 4;
+let stepClock = 0;
 const SLIDERS = [['bots', 'snake-bots'], ['baseSpeed', 'snake-speed'], ['boostSpeed', 'snake-boost'],
   ['agility', 'snake-agility'], ['perception', 'snake-perception'], ['food', 'snake-food']];
 
@@ -24,6 +29,9 @@ function studioActive() {
 
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight);
+  // Une image par pixel CSS : sur un écran haute densité (×1,5, ×2), dessiner 2 à 4 fois plus
+  // de pixels fait tomber la fluidité sans que la différence se voie en jeu.
+  pixelDensity(1);
   canvas.parent('game');
   canvas.elt.addEventListener('pointerdown', () => { pressedOnCanvas = true; });
   window.addEventListener('pointerup', () => { pressedOnCanvas = false; });
@@ -101,7 +109,7 @@ function readInput() {
   if (phase === 'menu') {
     const p = state.player;
     if (p) {
-      const a = frameCount / 140;
+      const a = state.frame / 140;
       state.input = { target: createVector(Math.cos(a) * 500, Math.sin(a) * 500), boost: false };
     }
     return;
@@ -109,23 +117,35 @@ function readInput() {
   SnakeArena.setInput(state, mouseX, mouseY, (mouseIsPressed && pressedOnCanvas) || keyIsDown(32), width, height);
 }
 
+// Nombre de pas de simulation dus depuis l'image précédente. Un écart de moins d'une ms avec un
+// nombre entier de pas (60 Hz irrégulier) compte pour ce nombre, sinon on alternerait 0 et 2 pas.
+function stepsDue() {
+  let dt = deltaTime;
+  const k = Math.round(dt / STEP_MS);
+  if (k >= 1 && Math.abs(dt - k * STEP_MS) < 1) dt = k * STEP_MS;
+  stepClock = Math.min(stepClock + dt, STEP_MS * MAX_STEPS);
+  const steps = Math.floor(stepClock / STEP_MS + 1e-6);
+  stepClock = Math.max(0, stepClock - steps * STEP_MS);
+  return steps;
+}
+
 function draw() {
   if (studioActive()) {
     TrailerStudio.frame();
     return;
   }
-  if (phase !== 'paused') {
-    readInput();
-    SnakeArena.step(state, width, height);
+  snakeSounds.setEnabled(soundOn && phase === 'play');
+  for (let i = stepsDue(); i > 0; i--) {
+    if (phase !== 'paused') {
+      readInput();
+      SnakeArena.step(state, width, height);
+      if (phase === 'play') snakeSounds.react(state.events);
+    }
+    // Mort : « Éliminé » écrit par des rats qui fuient la souris.
+    if (phase !== 'menu') RatTitle.update(ratTitle, !state.player, mouseInside() ? { x: mouseX, y: mouseY } : null, width, height);
   }
   SnakeArena.show(state);
-  if (phase !== 'menu') {
-    // Mort : « Éliminé » écrit par des rats qui fuient la souris.
-    RatTitle.update(ratTitle, !state.player, mouseInside() ? { x: mouseX, y: mouseY } : null, width, height);
-    RatTitle.draw(drawingContext, ratTitle, width, height);
-  }
-  snakeSounds.setEnabled(soundOn && phase === 'play');
-  if (phase === 'play') snakeSounds.react(state.events);
+  if (phase !== 'menu') RatTitle.draw(drawingContext, ratTitle, width, height);
   if (phase !== 'menu' && frameCount % 6 === 0) {
     if (frameCount % 30 === 0) saveRecord();
     Hud.render(state, profile);

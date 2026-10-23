@@ -401,7 +401,7 @@ const SnakeArena = (() => {
     ctx.scale(zoom, zoom);
     if (rotation) ctx.rotate(rotation);
     ctx.translate(-x, -y);
-    Meadow.draw(ctx, view, RADIUS);
+    Meadow.drawCached(ctx, view, RADIUS, zoom);
     for (const food of state.foods) {
       if (visible(food.pos, 30, view)) food.show(ctx, state.frame, PreySprites.get(food.kind));
     }
